@@ -1,0 +1,35 @@
+using UglyToad.PdfPig;
+
+namespace PdfStudio
+{
+    public static class PdfExtractor
+    {
+        public static ParsedDocument Parse(string path)
+        {
+            var pages = new System.Collections.Generic.List<ParsedPage>();
+
+            using var pdf = PdfDocument.Open(path);
+            foreach (var page in pdf.GetPages())
+            {
+                double widthPt = page.Width;
+                double heightPt = page.Height;
+
+                var spans = new System.Collections.Generic.List<TextSpan>();
+                int idx = 0;
+
+                foreach (var w in page.GetWords())
+                {
+                    var bb = w.BoundingBox;
+                    double x = bb.Left, y = bb.Bottom, wpt = bb.Width, hpt = bb.Height;
+                    double approxFont = hpt; // heuristic
+
+                    spans.Add(new TextSpan(idx++, w.Text, x, y, wpt, hpt, approxFont, null));
+                }
+
+                pages.Add(new ParsedPage(page.Number - 1, widthPt, heightPt, spans)); // 0-based
+            }
+
+            return new ParsedDocument(pages);
+        }
+    }
+}
